@@ -1,0 +1,26 @@
+# Vonage Voice Recorder - Dependencies
+
+# Web Framework
+Flask>=2.3.0
+
+# Vonage SDK
+vonage>=3.0.0
+
+# Structured Logging
+structlog>=23.1.0
+
+# Database
+# SQLite is built-in to Python
+# PostgreSQL support (optional for production)
+psycopg2-binary>=2.9.0
+
+# Configuration
+python-dotenv>=1.0.0
+
+# Development and Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+hypothesis>=6.82.0
+
+# Type checking (optional)
+mypy>=1.5.0
