@@ -286,10 +286,13 @@ class WebhookHandler:
         )
         self.storage.save_call_log(call_log)
         
-        self.logger.debug(
+        self.logger.info(
             "call_log_saved",
-            call_uuid=call_uuid,
-            call_log_id=call_log.id
+            call_log_id=call_log.id,
+            stored_call_uuid=conversation_uuid,
+            original_call_uuid=call_uuid,
+            caller_number=caller_number,
+            called_number=called_number
         )
         
         # NCCO を生成 (Requirements 1.1, 2.1)
