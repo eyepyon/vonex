@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VONEX - 電話をかけるだけで、あなたの言葉が素敵な音楽に変わる</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>tailwind.config={theme:{extend:{colors:{primary:'#57B5E7',secondary:'#8DD3C7'},borderRadius:{'none':'0px','sm':'4px',DEFAULT:'8px','md':'12px','lg':'16px','xl':'20px','2xl':'24px','3xl':'32px','full':'9999px','button':'8px'}}}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+<style>
+:where([class^="ri-"])::before { content: "\f3c2"; }
+</style>
+</head>
+<body class="bg-white">
+<!-- Header -->
+<header class="bg-white shadow-sm">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex justify-between items-center py-4">
+<div class="flex items-center">
+<div class="w-8 h-8 flex items-center justify-center text-primary text-2xl">
+<i class="ri-music-2-line"></i>
+</div>
+<h1 class="ml-2 text-2xl font-['Pacifico'] text-gray-900">VONEX</h1>
+</div>
+<nav class="hidden md:flex space-x-8">
+<a href="#how-it-works" class="text-gray-700 hover:text-primary transition-colors">使い方</a>
+<a href="#sample" class="text-gray-700 hover:text-primary transition-colors">サンプル</a>
+<a href="#technology" class="text-gray-700 hover:text-primary transition-colors">技術</a>
+</nav>
+<a href="tel:+18135920110" class="bg-primary text-white px-6 py-2 !rounded-button hover:bg-blue-600 transition-colors whitespace-nowrap">
+今すぐ電話する
+</a>
+</div>
+</div>
+</header>
+<!-- Hero Section -->
+<section class="relative min-h-screen flex items-center justify-center overflow-hidden" style="background-image: url('https://readdy.ai/api/search-image?query=Professional%20modern%20office%20environment%20with%20clean%20sound%20waves%20visualization%2C%20elegant%20blue%20and%20white%20color%20palette%2C%20minimalist%20design%20with%20phone%20and%20microphone%20elements%2C%20white%20background%20on%20left%20side%20for%20text%20overlay%2C%20trustworthy%20business%20atmosphere%2C%20natural%20lighting%2C%20corporate%20photography%20style%2C%20soft%20blue%20tones%2C%20professional%20technology%20setting&width=1920&height=1080&seq=heroblue&orientation=landscape'); background-size: cover; background-position: center;">
+<div class="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent"></div>
+<div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid lg:grid-cols-2 gap-12 items-center">
+<div class="text-left">
+<h2 class="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+電話をかけるだけで<br>
+<span class="text-primary">あなたの言葉が</span><br>
+素敵な音楽に変わる
+</h2>
+<p class="text-xl text-gray-600 mb-8 leading-relaxed">
+新時代のセールス＆コミュニケーションツール<br>
+営業電話も楽しい音楽なら聴いてみたくなる
+</p>
+<div class="flex flex-col sm:flex-row gap-4">
+<a href="tel:+18135920110" class="bg-primary text-white px-8 py-4 !rounded-button text-lg font-semibold hover:bg-blue-600 transition-colors text-center whitespace-nowrap">
+<div class="w-5 h-5 flex items-center justify-center inline-block mr-2">
+<i class="ri-phone-line"></i>
+</div>
++1 813-592-0110 に電話する
+</a>
+<a href="#sample" class="border-2 border-gray-300 text-gray-700 px-8 py-4 !rounded-button text-lg font-semibold hover:border-primary hover:text-primary transition-colors text-center whitespace-nowrap">
+サンプルを聴く
+</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-20 bg-gray-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h3 class="text-4xl font-bold text-gray-900 mb-4">VONEX の特徴</h3>
+<p class="text-xl text-gray-600">革新的な音楽生成サービスの魅力</p>
+</div>
+<div class="grid md:grid-cols-3 gap-8">
+<div class="bg-white p-8 rounded-xl shadow-sm text-center">
+<div class="w-16 h-16 flex items-center justify-center bg-primary/10 rounded-full mx-auto mb-6">
+<div class="w-8 h-8 flex items-center justify-center text-primary text-2xl">
+<i class="ri-shield-check-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">声バレなし</h4>
+<p class="text-gray-600 leading-relaxed">
+あなたの声をそのまま使用せず、文字に変換してから作曲。プライバシーも安心です。
+</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-sm text-center">
+<div class="w-16 h-16 flex items-center justify-center bg-secondary/10 rounded-full mx-auto mb-6">
+<div class="w-8 h-8 flex items-center justify-center text-secondary text-2xl">
+<i class="ri-rocket-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">営業革命</h4>
+<p class="text-gray-600 leading-relaxed">
+誰も聞いてくれない営業電話の時代。楽しい音楽なら聴いてみたくなりますよね？
+</p>
+</div>
+<div class="bg-white p-8 rounded-xl shadow-sm text-center">
+<div class="w-16 h-16 flex items-center justify-center bg-orange-100 rounded-full mx-auto mb-6">
+<div class="w-8 h-8 flex items-center justify-center text-orange-500 text-2xl">
+<i class="ri-brain-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">記憶に残る</h4>
+<p class="text-gray-600 leading-relaxed">
+ラップは頭に残り、商品を思い出すきっかけに。これこそ新時代のセールスです！
+</p>
+</div>
+</div>
+</div>
+</section>
+<!-- How It Works Section -->
+<section id="how-it-works" class="py-20 bg-white">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h3 class="text-4xl font-bold text-gray-900 mb-4">使い方はとても簡単</h3>
+<p class="text-xl text-gray-600">3 ステップで完成</p>
+</div>
+<div class="grid md:grid-cols-3 gap-8">
+<div class="text-center">
+<div class="relative mb-8">
+<img src="https://readdy.ai/api/search-image?query=Professional%20businessperson%20holding%20smartphone%20making%20a%20phone%20call%2C%20clean%20white%20background%2C%20modern%20minimalist%20style%2C%20soft%20natural%20lighting%2C%20elegant%20blue%20color%20scheme%2C%20trustworthy%20corporate%20atmosphere%2C%20professional%20business%20setting%2C%20clean%20composition&width=400&height=300&seq=step1blue&orientation=landscape" alt="電話をかける" class="w-full h-48 object-cover object-top rounded-xl">
+<div class="absolute -top-4 -left-4 w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center text-xl font-bold">1</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">電話をかける</h4>
+<p class="text-gray-600 mb-4">+1 813-592-0110 に電話をかけてください</p>
+<a href="tel:+18135920110" class="text-primary font-semibold text-lg hover:underline">
+<div class="w-4 h-4 flex items-center justify-center inline-block mr-1">
+<i class="ri-phone-line"></i>
+</div>
++1 813-592-0110
+</a>
+</div>
+<div class="text-center">
+<div class="relative mb-8">
+<img src="https://readdy.ai/api/search-image?query=Professional%20person%20speaking%20into%20microphone%20with%20subtle%20sound%20waves%20visualization%2C%20clean%20recording%20studio%20with%20elegant%20blue%20and%20white%20color%20scheme%2C%20modern%20minimalist%20style%2C%20natural%20lighting%2C%20corporate%20atmosphere%2C%20professional%20audio%20recording%20setup&width=400&height=300&seq=step2blue&orientation=landscape" alt="メッセージを録音" class="w-full h-48 object-cover object-top rounded-xl">
+<div class="absolute -top-4 -left-4 w-12 h-12 bg-secondary text-white rounded-full flex items-center justify-center text-xl font-bold">2</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">メッセージを録音</h4>
+<p class="text-gray-600">想いを込めて、伝えたいメッセージを録音してください</p>
+</div>
+<div class="text-center">
+<div class="relative mb-8">
+<img src="https://readdy.ai/api/search-image?query=Professional%20smartphone%20displaying%20SMS%20message%20with%20subtle%20music%20notes%2C%20clean%20white%20background%2C%20modern%20minimalist%20style%2C%20natural%20lighting%2C%20elegant%20blue%20color%20scheme%2C%20corporate%20digital%20interface%2C%20trustworthy%20atmosphere%2C%20professional%20mobile%20interface&width=400&height=300&seq=step3blue&orientation=landscape" alt="音楽を受信" class="w-full h-48 object-cover object-top rounded-xl">
+<div class="absolute -top-4 -left-4 w-12 h-12 bg-orange-500 text-white rounded-full flex items-center justify-center text-xl font-bold">3</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900 mb-4">音楽を受信</h4>
+<p class="text-gray-600">SMS で URL を受信し、完成した音楽を視聴できます</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Sample Section -->
+<section id="sample" class="py-20 bg-gray-50">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h3 class="text-4xl font-bold text-gray-900 mb-4">実際のサンプルを聴いてみてください</h3>
+<p class="text-xl text-gray-600">このメッセージがどんな音楽になったのか</p>
+</div>
+<div class="bg-white rounded-2xl p-8 shadow-sm">
+<div class="mb-8">
+<h4 class="text-2xl font-bold text-gray-900 mb-4">サンプルメッセージ</h4>
+<blockquote class="border-l-4 border-primary pl-6 text-lg text-gray-700 italic leading-relaxed">
+「このサービスは電話に入れた言葉を歌やラップにします。声バレの心配もございません。だから、おもいっきり言いたいことを言いましょう！王様の耳はロバの耳！！みたいなことも全然問題ありません。しらんけど」
+</blockquote>
+</div>
+<div class="bg-gray-50 rounded-xl p-6">
+<h5 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+<div class="w-6 h-6 flex items-center justify-center mr-2 text-primary">
+<i class="ri-music-line"></i>
+</div>
+完成した楽曲
+</h5>
+<audio controls class="w-full">
+<source src="https://cdn1.suno.ai/987ee38d-431d-4e79-8e6b-4ebf901903cb.mp3" type="audio/mpeg">
+お使いのブラウザは音声の再生をサポートしていません。
+</audio>
+</div>
+</div>
+</div>
+</section>
+<!-- Why Phone Music Section -->
+<section class="py-20 bg-white">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid lg:grid-cols-2 gap-12 items-center">
+<div>
+<h3 class="text-4xl font-bold text-gray-900 mb-6">なぜ電話で音楽なのか？</h3>
+<div class="space-y-6">
+<div class="flex items-start">
+<div class="w-8 h-8 flex items-center justify-center bg-red-100 rounded-full mr-4 mt-1">
+<div class="w-4 h-4 flex items-center justify-center text-red-500">
+<i class="ri-phone-line"></i>
+</div>
+</div>
+<div>
+<h4 class="text-xl font-bold text-gray-900 mb-2">営業電話の課題</h4>
+<p class="text-gray-600">いまの時代、営業電話も誰も聞いてくれない。ひとりひとりスマートフォンを持つ時代なのに、まったく届かない生産者の声。</p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-8 h-8 flex items-center justify-center bg-primary/10 rounded-full mr-4 mt-1">
+<div class="w-4 h-4 flex items-center justify-center text-primary">
+<i class="ri-music-2-line"></i>
+</div>
+</div>
+<div>
+<h4 class="text-xl font-bold text-gray-900 mb-2">音楽の力</h4>
+<p class="text-gray-600">素晴らしい商品も、話を聞いてもらえないなら売れません。そんな中、楽しい音楽だと営業電話も聴いてみたくなりますよね？</p>
+</div>
+</div>
+<div class="flex items-start">
+<div class="w-8 h-8 flex items-center justify-center bg-orange-100 rounded-full mr-4 mt-1">
+<div class="w-4 h-4 flex items-center justify-center text-orange-500">
+<i class="ri-lightbulb-line"></i>
+</div>
+</div>
+<div>
+<h4 class="text-xl font-bold text-gray-900 mb-2">記憶への定着</h4>
+<p class="text-gray-600">さらにラップは頭に残り、商品を思い出すきっかけにもなってくれます。これこそ新時代のセールスです！</p>
+</div>
+</div>
+</div>
+</div>
+<div>
+<img src="https://readdy.ai/api/search-image?query=Professional%20businessperson%20making%20phone%20call%20with%20subtle%20musical%20notes%20and%20sound%20waves%2C%20modern%20office%20background%20with%20elegant%20blue%20and%20white%20color%20palette%2C%20natural%20lighting%2C%20clean%20composition%2C%20trustworthy%20corporate%20atmosphere%2C%20innovative%20sales%20concept%2C%20professional%20business%20communication&width=600&height=400&seq=whyphoneblue&orientation=landscape" alt="新時代のセールス" class="w-full h-96 object-cover object-top rounded-xl shadow-lg">
+</div>
+</div>
+</div>
+</section>
+<!-- Technology Section -->
+<section id="technology" class="py-20 bg-gray-50">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="text-center mb-16">
+<h3 class="text-4xl font-bold text-gray-900 mb-4">技術とプライバシー</h3>
+<p class="text-xl text-gray-600">安心してご利用いただける理由</p>
+</div>
+<div class="grid md:grid-cols-2 gap-12 items-center">
+<div>
+<img src="https://readdy.ai/api/search-image?query=Professional%20AI%20technology%20interface%20showing%20voice%20to%20text%20to%20music%20conversion%20process%20with%20clear%20visual%20elements%2C%20clean%20digital%20transformation%20visualization%20on%20bright%20white%20background%2C%20elegant%20blue%20and%20white%20color%20scheme%2C%20privacy%20protection%20symbols%2C%20modern%20corporate%20technology%20illustration%2C%20high%20contrast%20design%2C%20trustworthy%20professional%20atmosphere&width=600&height=400&seq=techblue&orientation=landscape" alt="技術説明" class="w-full h-80 object-cover object-top rounded-xl shadow-lg">
+</div>
+<div>
+<div class="space-y-8">
+<div>
+<div class="flex items-center mb-4">
+<div class="w-10 h-10 flex items-center justify-center bg-primary/10 rounded-full mr-4">
+<div class="w-5 h-5 flex items-center justify-center text-primary">
+<i class="ri-shield-check-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900">声をそのまま使用しません</h4>
+</div>
+<p class="text-gray-600 leading-relaxed">電話の声をそのまま利用するわけではありません。言葉を文字に置き換え、それをもとに新たに作曲しています。</p>
+</div>
+<div>
+<div class="flex items-center mb-4">
+<div class="w-10 h-10 flex items-center justify-center bg-secondary/10 rounded-full mr-4">
+<div class="w-5 h-5 flex items-center justify-center text-secondary">
+<i class="ri-user-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900">プライバシー保護</h4>
+</div>
+<p class="text-gray-600 leading-relaxed">ですので、自分の声でもありませんしプライバシーもなにも心配ご無用。安心してご利用できます。</p>
+</div>
+<div>
+<div class="flex items-center mb-4">
+<div class="w-10 h-10 flex items-center justify-center bg-orange-100 rounded-full mr-4">
+<div class="w-5 h-5 flex items-center justify-center text-orange-500">
+<i class="ri-cpu-line"></i>
+</div>
+</div>
+<h4 class="text-2xl font-bold text-gray-900">AI 作曲技術</h4>
+</div>
+<p class="text-gray-600 leading-relaxed">最新の AI 技術により、あなたのメッセージを魅力的な楽曲に自動変換します。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Phone Number Highlight -->
+<section class="py-20 bg-primary">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<h3 class="text-4xl font-bold text-white mb-8">今すぐお試しください</h3>
+<div class="bg-white rounded-2xl p-12 shadow-xl">
+<div class="w-16 h-16 flex items-center justify-center bg-primary/10 rounded-full mx-auto mb-6">
+<div class="w-8 h-8 flex items-center justify-center text-primary text-2xl">
+<i class="ri-phone-line"></i>
+</div>
+</div>
+<p class="text-2xl text-gray-600 mb-6">この番号に電話をかけてください</p>
+<a href="tel:+18135920110" class="text-6xl font-bold text-primary hover:text-blue-600 transition-colors block mb-6">
++1 813-592-0110
+</a>
+<p class="text-lg text-gray-600">通話料金のみでご利用いただけます</p>
+</div>
+</div>
+</section>
+<!-- Final CTA Section -->
+<section class="py-20 bg-white">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+<h3 class="text-4xl font-bold text-gray-900 mb-6">今すぐあなたの言葉を音楽に変えてみませんか？</h3>
+<p class="text-xl text-gray-600 mb-8">新時代のコミュニケーションを体験してください</p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center">
+<a href="tel:+18135920110" class="bg-primary text-white px-8 py-4 !rounded-button text-lg font-semibold hover:bg-blue-600 transition-colors whitespace-nowrap">
+<div class="w-5 h-5 flex items-center justify-center inline-block mr-2">
+<i class="ri-phone-line"></i>
+</div>
+今すぐ電話する
+</a>
+<a href="#sample" class="border-2 border-gray-300 text-gray-700 px-8 py-4 !rounded-button text-lg font-semibold hover:border-primary hover:text-primary transition-colors whitespace-nowrap">
+もう一度サンプルを聴く
+</a>
+</div>
+</div>
+</section>
+<!-- Footer -->
+<footer class="bg-gray-900 text-white py-12">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="grid md:grid-cols-3 gap-8">
+<div>
+<div class="flex items-center mb-4">
+<div class="w-8 h-8 flex items-center justify-center text-primary text-2xl">
+<i class="ri-music-2-line"></i>
+</div>
+<h4 class="ml-2 text-2xl font-['Pacifico']">VONEX</h4>
+</div>
+<p class="text-gray-400 leading-relaxed">電話をかけるだけで、あなたの言葉が素敵な音楽に変わる新時代のコミュニケーションツール</p>
+</div>
+<div>
+<h5 class="text-lg font-semibold mb-4">お問い合わせ</h5>
+<div class="space-y-2">
+<p class="text-gray-400 flex items-center">
+<div class="w-4 h-4 flex items-center justify-center mr-2">
+<i class="ri-phone-line"></i>
+</div>
++1 813-592-0110
+</p>
+<p class="text-gray-400">通話料金のみでご利用いただけます</p>
+</div>
+</div>
+<div>
+<h5 class="text-lg font-semibold mb-4">サービス情報</h5>
+<ul class="space-y-2 text-gray-400">
+<li><a href="#" class="hover:text-white transition-colors">プライバシーポリシー</a></li>
+<li><a href="#" class="hover:text-white transition-colors">利用規約</a></li>
+<li><a href="#" class="hover:text-white transition-colors">よくある質問</a></li>
+</ul>
+</div>
+</div>
+<div class="border-t border-gray-800 mt-8 pt-8 text-center">
+<p class="text-gray-400">&copy; 2026 VONEX. All rights reserved.</p>
+</div>
+</div>
+</footer>
+<script id="smooth-scroll">
+document.addEventListener('DOMContentLoaded', function() {
+const links = document.querySelectorAll('a[href^="#"]');
+links.forEach(link => {
+link.addEventListener('click', function(e) {
+e.preventDefault();
+const targetId = this.getAttribute('href').substring(1);
+const targetElement = document.getElementById(targetId);
+if (targetElement) {
+targetElement.scrollIntoView({
+behavior: 'smooth',
+block: 'start'
+});
+}
+});
+});
+});
+</script>
+<script id="mobile-menu">
+document.addEventListener('DOMContentLoaded', function() {
+const mobileMenuButton = document.querySelector('[data-mobile-menu-button]');
+const mobileMenu = document.querySelector('[data-mobile-menu]');
+if (mobileMenuButton && mobileMenu) {
+mobileMenuButton.addEventListener('click', function() {
+mobileMenu.classList.toggle('hidden');
+});
+}
+});
+</script>
+</body>
+</html>
