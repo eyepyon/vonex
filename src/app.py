@@ -272,9 +272,10 @@ class WebhookHandler:
         )
         
         # 通話ログを保存 (Requirements 1.5)
+        # conversation_uuidをcall_uuidとして保存（Recording Webhookで検索するため）
         call_log = CallLog(
             id=str(uuid.uuid4()),
-            call_uuid=call_uuid,
+            call_uuid=conversation_uuid,  # conversation_uuidを使用
             caller_number=caller_number,
             called_number=called_number,
             status="answered",
