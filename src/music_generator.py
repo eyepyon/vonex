@@ -161,8 +161,8 @@ class MusicGenerator:
                 if data.get("code") != 200:
                     raise MusicGeneratorError(f"APIエラー: {data.get('message', 'Unknown error')}")
                 
-                # workIdを取得
-                work_id = data.get("data", {}).get("workId")
+                # workIdを取得（トップレベルまたはdata内）
+                work_id = data.get("workId") or data.get("data", {}).get("task_id")
                 
                 if not work_id:
                     raise MusicGeneratorError(f"タスクIDが取得できませんでした: {data}")
