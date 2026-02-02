@@ -196,6 +196,7 @@ class WebhookHandler:
         ncco_builder: NCCO を構築するビルダー
         recording_manager: 録音データを管理するマネージャー
         logger: 構造化ロガー
+        music_generator: 音楽生成器（オプション）
     
     Requirements:
         - 1.1: 着信電話を受け付け、有効な NCCO で応答
@@ -208,7 +209,9 @@ class WebhookHandler:
         self,
         ncco_builder: NCCOBuilder,
         recording_manager: RecordingManager,
-        storage: Storage
+        storage: Storage,
+        music_generator: Optional[Any] = None,
+        music_style: str = "j-pop, emotional, heartfelt, japanese"
     ):
         """
         WebhookHandler を初期化
@@ -217,10 +220,14 @@ class WebhookHandler:
             ncco_builder: NCCO を構築するビルダー
             recording_manager: 録音データを管理するマネージャー
             storage: ストレージレイヤー
+            music_generator: 音楽生成器（オプション）
+            music_style: 音楽スタイル
         """
         self.ncco_builder = ncco_builder
         self.recording_manager = recording_manager
         self.storage = storage
+        self.music_generator = music_generator
+        self.music_style = music_style
         self.logger = get_logger(__name__)
     
     def handle_answer(self, params: Dict[str, Any]) -> list:
@@ -377,6 +384,79 @@ class WebhookHandler:
             recording_url=recording_url,
             duration=duration
         )
+        
+        # 音楽生成が有効な場合、バックグラウンドで処理を開始
+        if self.music_generator:
+            # 通話ログから発信者番号を取得
+            call_log = self.storage.get_call_log(call_uuid)
+            caller_number = call_log.caller_number if call_log else ""
+            
+            # ローカルファイルパスを取得
+            local_file_path = self.recording_manager.recordings_dir + "/" + metadata.id + ".mp3"
+            
+            if caller_number and local_file_path:
+                self.logger.info(
+                    "starting_music_generation",
+                    recording_id=metadata.id,
+                    caller_number=caller_number,
+                    local_file_path=local_file_path
+                )
+                
+                # 別スレッドで音楽生成を実行（Webhookレスポンスをブロックしないため）
+                import threading
+                thread = threading.Thread(
+                    target=self._process_music_generation,
+                    args=(local_file_path, caller_number, metadata.id)
+                )
+                thread.daemon = True
+                thread.start()
+    
+    def _process_music_generation(
+        self,
+        audio_file_path: str,
+        caller_number: str,
+        recording_id: str
+    ) -> None:
+        """
+        バックグラウンドで音楽生成を処理
+        
+        Args:
+            audio_file_path: 音声ファイルのパス
+            caller_number: 発信者の電話番号
+            recording_id: 録音ID
+        """
+        try:
+            self.logger.info(
+                "music_generation_started",
+                recording_id=recording_id,
+                audio_file_path=audio_file_path
+            )
+            
+            music_url = self.music_generator.process_voicemail(
+                audio_file_path=audio_file_path,
+                caller_number=caller_number,
+                music_style=self.music_style
+            )
+            
+            if music_url:
+                self.logger.info(
+                    "music_generation_completed",
+                    recording_id=recording_id,
+                    music_url=music_url
+                )
+            else:
+                self.logger.warning(
+                    "music_generation_failed",
+                    recording_id=recording_id
+                )
+                
+        except Exception as e:
+            self.logger.error(
+                "music_generation_error",
+                recording_id=recording_id,
+                error=str(e),
+                exc_info=True
+            )
     
     def handle_event(self, data: Dict[str, Any]) -> None:
         """
@@ -513,8 +593,36 @@ def create_app(config: Optional[Config] = None) -> Flask:
     )
     app.config["RECORDING_MANAGER"] = recording_manager
     
+    # Music Generator を初期化（有効な場合のみ）
+    music_generator = None
+    if config.enable_music_generation:
+        if config.openai_api_key and config.mureka_api_key and config.vonage_sms_from:
+            from .music_generator import MusicGenerator
+            music_generator = MusicGenerator(
+                openai_api_key=config.openai_api_key,
+                mureka_api_key=config.mureka_api_key,
+                vonage_api_key=config.vonage_api_key,
+                vonage_api_secret=config.vonage_api_secret,
+                vonage_from_number=config.vonage_sms_from
+            )
+            logger.info(
+                "music_generator_initialized",
+                music_style=config.music_style
+            )
+        else:
+            logger.warning(
+                "music_generator_disabled",
+                reason="Missing required API keys (OPENAI_API_KEY, MUREKA_API_KEY, VONAGE_SMS_FROM)"
+            )
+    
     # Webhook Handler を初期化
-    webhook_handler = WebhookHandler(ncco_builder, recording_manager, storage)
+    webhook_handler = WebhookHandler(
+        ncco_builder=ncco_builder,
+        recording_manager=recording_manager,
+        storage=storage,
+        music_generator=music_generator,
+        music_style=config.music_style
+    )
     app.config["WEBHOOK_HANDLER"] = webhook_handler
     
     # ==========================================================================
