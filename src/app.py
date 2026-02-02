@@ -882,7 +882,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
             raise
     
     # Event Webhook エンドポイント (Requirements 1.4, 3.6, 3.7, 6.2)
-    @app.route("/webhooks/event", methods=["POST"])
+    @app.route("/webhooks/event", methods=["GET", "POST"])
     def event_webhook():
         """
         Event Webhook エンドポイント
@@ -906,37 +906,42 @@ def create_app(config: Optional[Config] = None) -> Flask:
         try:
             logger.debug(
                 "event_webhook_received",
-                content_type=request.content_type
+                content_type=request.content_type,
+                method=request.method
             )
             
-            # JSON データを取得し検証 (Requirements 1.4)
-            try:
-                data = request.get_json(force=True, silent=False)
-            except Exception as json_error:
-                logger.error(
-                    "invalid_json_error",
-                    error_type="invalid_json",
-                    error_message=str(json_error),
-                    path=request.path,
-                    content_type=request.content_type,
-                    exc_info=True
-                )
-                raise WebhookValidationError(
-                    message="Invalid JSON: request body is malformed",
-                    error_type="invalid_json"
-                )
-            
-            # データが None の場合は空の辞書として扱う
-            if data is None:
-                data = {}
-            
-            # JSON オブジェクトであることを検証
-            is_valid, error_message = validate_json_request(data)
-            if not is_valid:
-                raise WebhookValidationError(
-                    message=error_message,
-                    error_type="invalid_json"
-                )
+            # GET リクエストの場合はクエリパラメータから、POST の場合は JSON から取得
+            if request.method == "GET":
+                data = dict(request.args)
+            else:
+                # JSON データを取得し検証 (Requirements 1.4)
+                try:
+                    data = request.get_json(force=True, silent=False)
+                except Exception as json_error:
+                    logger.error(
+                        "invalid_json_error",
+                        error_type="invalid_json",
+                        error_message=str(json_error),
+                        path=request.path,
+                        content_type=request.content_type,
+                        exc_info=True
+                    )
+                    raise WebhookValidationError(
+                        message="Invalid JSON: request body is malformed",
+                        error_type="invalid_json"
+                    )
+                
+                # データが None の場合は空の辞書として扱う
+                if data is None:
+                    data = {}
+                
+                # JSON オブジェクトであることを検証
+                is_valid, error_message = validate_json_request(data)
+                if not is_valid:
+                    raise WebhookValidationError(
+                        message=error_message,
+                        error_type="invalid_json"
+                    )
             
             logger.debug(
                 "event_webhook_data",
