@@ -230,6 +230,7 @@ class SQLiteStorage(Storage):
             file_size INTEGER NOT NULL,
             format VARCHAR(10) NOT NULL,
             status VARCHAR(20) NOT NULL,
+            local_file_path TEXT,
             created_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP NOT NULL
         )
@@ -270,6 +271,14 @@ class SQLiteStorage(Storage):
                 cursor.execute(create_recording_call_uuid_index)
                 cursor.execute(create_recording_created_at_index)
                 cursor.execute(create_call_log_call_uuid_index)
+                
+                # 既存テーブルにlocal_file_pathカラムがない場合は追加（マイグレーション）
+                try:
+                    cursor.execute("ALTER TABLE recordings ADD COLUMN local_file_path TEXT")
+                except sqlite3.OperationalError:
+                    # カラムが既に存在する場合は無視
+                    pass
+                
                 conn.commit()
         except sqlite3.Error as e:
             raise StorageError(f"Failed to create tables: {e}") from e
@@ -293,8 +302,8 @@ class SQLiteStorage(Storage):
         INSERT OR REPLACE INTO recordings (
             id, call_uuid, conversation_uuid, caller_number, called_number,
             recording_url, recording_uuid, duration, file_size, format,
-            status, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            status, local_file_path, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         
         try:
@@ -312,6 +321,7 @@ class SQLiteStorage(Storage):
                     recording.file_size,
                     recording.format,
                     recording.status,
+                    recording.local_file_path,
                     recording.created_at.isoformat(),
                     recording.updated_at.isoformat()
                 ))
@@ -339,7 +349,7 @@ class SQLiteStorage(Storage):
         sql = """
         SELECT id, call_uuid, conversation_uuid, caller_number, called_number,
                recording_url, recording_uuid, duration, file_size, format,
-               status, created_at, updated_at
+               status, local_file_path, created_at, updated_at
         FROM recordings
         WHERE call_uuid = ?
         """
@@ -383,7 +393,7 @@ class SQLiteStorage(Storage):
         sql = """
         SELECT id, call_uuid, conversation_uuid, caller_number, called_number,
                recording_url, recording_uuid, duration, file_size, format,
-               status, created_at, updated_at
+               status, local_file_path, created_at, updated_at
         FROM recordings
         """
         
@@ -474,6 +484,7 @@ class SQLiteStorage(Storage):
             file_size=row["file_size"],
             format=row["format"],
             status=row["status"],
+            local_file_path=row["local_file_path"],
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"])
         )

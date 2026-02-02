@@ -28,6 +28,7 @@ class Recording:
         file_size: ファイルサイズ（バイト）
         format: 録音フォーマット (mp3, wav, ogg)
         status: ステータス (pending, completed, failed)
+        local_file_path: ローカルに保存された音声ファイルのパス
         created_at: 作成日時
         updated_at: 更新日時
     """
@@ -42,6 +43,7 @@ class Recording:
     file_size: int
     format: str
     status: str
+    local_file_path: Optional[str]
     created_at: datetime
     updated_at: datetime
 

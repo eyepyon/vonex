@@ -505,8 +505,12 @@ def create_app(config: Optional[Config] = None) -> Flask:
     ncco_builder = NCCOBuilder(config)
     app.config["NCCO_BUILDER"] = ncco_builder
     
-    # Recording Manager を初期化
-    recording_manager = RecordingManager(storage)
+    # Recording Manager を初期化（Vonage認証情報を渡して音声ファイルダウンロードを有効化）
+    recording_manager = RecordingManager(
+        storage=storage,
+        vonage_api_key=config.vonage_api_key,
+        vonage_api_secret=config.vonage_api_secret
+    )
     app.config["RECORDING_MANAGER"] = recording_manager
     
     # Webhook Handler を初期化

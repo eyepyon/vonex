@@ -2,10 +2,14 @@
 録音マネージャーモジュール (Recording Manager Module)
 
 録音データの管理を担当するクラスを提供します。
+音声ファイルのダウンロードと保存機能も提供します。
 """
 
+import os
+import requests
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 import uuid
 
@@ -30,6 +34,7 @@ class RecordingMetadata:
         duration: 録音時間（秒）
         timestamp: 録音日時
         status: ステータス
+        local_file_path: ローカルに保存されたファイルパス（オプション）
     """
     id: str
     call_uuid: str
@@ -38,6 +43,7 @@ class RecordingMetadata:
     duration: int
     timestamp: datetime
     status: str
+    local_file_path: Optional[str] = None
 
 
 class RecordingManager:
@@ -46,6 +52,7 @@ class RecordingManager:
     
     録音メタデータの保存、取得、一覧表示を担当します。
     Storage レイヤーを使用してデータの永続化を行います。
+    音声ファイルのダウンロードと保存も行います。
     
     Validates:
         - Requirements 3.4: Recording_URL受信時に録音メタデータを保存
@@ -54,14 +61,94 @@ class RecordingManager:
         - Requirements 4.5: 日付フィルタリング付きで全録音を一覧表示する方法を提供
     """
     
-    def __init__(self, storage: Storage):
+    # 録音ファイル保存ディレクトリ
+    DEFAULT_RECORDINGS_DIR = "recordings"
+    
+    def __init__(
+        self,
+        storage: Storage,
+        recordings_dir: Optional[str] = None,
+        vonage_api_key: Optional[str] = None,
+        vonage_api_secret: Optional[str] = None
+    ):
         """
         RecordingManagerを初期化
         
         Args:
             storage: データ永続化に使用するStorageインスタンス
+            recordings_dir: 録音ファイル保存ディレクトリ（オプション）
+            vonage_api_key: Vonage APIキー（ダウンロード認証用）
+            vonage_api_secret: Vonage APIシークレット（ダウンロード認証用）
         """
         self.storage = storage
+        self.recordings_dir = recordings_dir or self.DEFAULT_RECORDINGS_DIR
+        self.vonage_api_key = vonage_api_key
+        self.vonage_api_secret = vonage_api_secret
+        
+        # 録音ディレクトリを作成
+        self._ensure_recordings_dir()
+    
+    def _ensure_recordings_dir(self) -> None:
+        """録音ディレクトリが存在することを確認し、なければ作成"""
+        Path(self.recordings_dir).mkdir(parents=True, exist_ok=True)
+    
+    def download_recording(
+        self,
+        recording_url: str,
+        recording_id: str,
+        format: str = "mp3"
+    ) -> Optional[str]:
+        """
+        Vonageから録音ファイルをダウンロードしてローカルに保存
+        
+        Args:
+            recording_url: Vonageの録音ファイルURL
+            recording_id: 録音ID（ファイル名に使用）
+            format: 録音フォーマット
+        
+        Returns:
+            保存されたファイルのパス、失敗した場合はNone
+        """
+        if not recording_url:
+            return None
+        
+        try:
+            # ファイル名を生成
+            filename = f"{recording_id}.{format}"
+            file_path = os.path.join(self.recordings_dir, filename)
+            
+            # Vonage APIで認証してダウンロード
+            # Vonageの録音URLはJWT認証が必要
+            headers = {}
+            auth = None
+            
+            if self.vonage_api_key and self.vonage_api_secret:
+                # Basic認証を使用
+                auth = (self.vonage_api_key, self.vonage_api_secret)
+            
+            response = requests.get(
+                recording_url,
+                auth=auth,
+                headers=headers,
+                timeout=60,
+                stream=True
+            )
+            response.raise_for_status()
+            
+            # ファイルに保存
+            with open(file_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            
+            return file_path
+            
+        except requests.RequestException as e:
+            # ダウンロード失敗時はログを出力してNoneを返す
+            print(f"録音ファイルのダウンロードに失敗しました: {e}")
+            return None
+        except IOError as e:
+            print(f"録音ファイルの保存に失敗しました: {e}")
+            return None
     
     def save_recording(
         self,
@@ -70,13 +157,14 @@ class RecordingManager:
         called_number: Optional[str] = None,
         recording_uuid: Optional[str] = None,
         file_size: Optional[int] = None,
-        format: str = "mp3"
+        format: str = "mp3",
+        download_file: bool = True
     ) -> None:
         """
         録音メタデータを保存
         
         RecordingMetadataを受け取り、完全なRecordingモデルに変換して
-        ストレージに永続化します。
+        ストレージに永続化します。オプションで音声ファイルもダウンロードします。
         
         Args:
             metadata: 録音メタデータ
@@ -85,6 +173,7 @@ class RecordingManager:
             recording_uuid: Vonage録音UUID（オプション）
             file_size: ファイルサイズ（バイト）（オプション）
             format: 録音フォーマット（デフォルト: mp3）
+            download_file: 音声ファイルをダウンロードするか（デフォルト: True）
         
         Raises:
             StorageError: 保存に失敗した場合
@@ -92,6 +181,15 @@ class RecordingManager:
         Validates: Requirements 3.4, 4.1
         """
         now = datetime.now()
+        
+        # 音声ファイルをダウンロード
+        local_file_path = None
+        if download_file and metadata.recording_url:
+            local_file_path = self.download_recording(
+                recording_url=metadata.recording_url,
+                recording_id=metadata.id,
+                format=format
+            )
         
         recording = Recording(
             id=metadata.id,
@@ -106,7 +204,8 @@ class RecordingManager:
             format=format,
             status=metadata.status,
             created_at=metadata.timestamp,
-            updated_at=now
+            updated_at=now,
+            local_file_path=local_file_path
         )
         
         self.storage.save_recording(recording)
