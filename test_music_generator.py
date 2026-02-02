@@ -25,7 +25,7 @@ def test_transcription_only(audio_file: str):
     
     mg = MusicGenerator(
         openai_api_key=os.getenv('OPENAI_API_KEY'),
-        mureka_api_key=os.getenv('MUREKA_API_KEY'),
+        udio_api_key=os.getenv('UDIO_API_KEY'),
         vonage_api_key=os.getenv('VONAGE_API_KEY'),
         vonage_api_secret=os.getenv('VONAGE_API_SECRET'),
         vonage_from_number=os.getenv('VONAGE_SMS_FROM', '')
@@ -47,12 +47,12 @@ def test_music_generation(lyrics: str):
     from src.music_generator import MusicGenerator
     
     print("\n" + "=" * 50)
-    print("音楽生成テスト")
+    print("音楽生成テスト (Udio API)")
     print("=" * 50)
     
     mg = MusicGenerator(
         openai_api_key=os.getenv('OPENAI_API_KEY'),
-        mureka_api_key=os.getenv('MUREKA_API_KEY'),
+        udio_api_key=os.getenv('UDIO_API_KEY'),
         vonage_api_key=os.getenv('VONAGE_API_KEY'),
         vonage_api_secret=os.getenv('VONAGE_API_SECRET'),
         vonage_from_number=os.getenv('VONAGE_SMS_FROM', '')
@@ -66,12 +66,12 @@ def test_music_generation(lyrics: str):
     print(f"\n音楽スタイル: {music_style}")
     
     try:
-        print("\nMureka APIにリクエスト送信中...")
-        task_id = mg.generate_music(lyrics, prompt=music_style)
-        print(f"✅ タスク作成成功! タスクID: {task_id}")
+        print("\nUdio APIにリクエスト送信中...")
+        work_id = mg.generate_music(lyrics, style=music_style)
+        print(f"✅ タスク作成成功! workId: {work_id}")
         
         print("\n音楽生成完了を待機中...")
-        music_url = mg.wait_for_music(task_id, timeout=300, poll_interval=10)
+        music_url = mg.wait_for_music(work_id, timeout=300, poll_interval=10)
         
         if music_url:
             print(f"✅ 音楽生成完了!")
@@ -96,7 +96,7 @@ def test_full_pipeline(audio_file: str, phone_number: str = None):
     
     mg = MusicGenerator(
         openai_api_key=os.getenv('OPENAI_API_KEY'),
-        mureka_api_key=os.getenv('MUREKA_API_KEY'),
+        udio_api_key=os.getenv('UDIO_API_KEY'),
         vonage_api_key=os.getenv('VONAGE_API_KEY'),
         vonage_api_secret=os.getenv('VONAGE_API_SECRET'),
         vonage_from_number=os.getenv('VONAGE_SMS_FROM', '')
@@ -133,7 +133,7 @@ def check_env():
     
     required = {
         'OPENAI_API_KEY': os.getenv('OPENAI_API_KEY'),
-        'MUREKA_API_KEY': os.getenv('MUREKA_API_KEY'),
+        'UDIO_API_KEY': os.getenv('UDIO_API_KEY'),
         'VONAGE_API_KEY': os.getenv('VONAGE_API_KEY'),
         'VONAGE_API_SECRET': os.getenv('VONAGE_API_SECRET'),
     }
@@ -164,11 +164,13 @@ def check_env():
 
 
 if __name__ == "__main__":
-    print("\n🎵 音楽生成テストスクリプト 🎵\n")
+    print("\n🎵 音楽生成テストスクリプト (Udio API) 🎵\n")
     
     # 環境変数チェック
     if not check_env():
         print("\n❌ 必須の環境変数が設定されていません")
+        print("\n.envファイルにUDIO_API_KEYを設定してください:")
+        print("  UDIO_API_KEY=your_udio_api_key_here")
         sys.exit(1)
     
     # 引数チェック
@@ -179,7 +181,7 @@ if __name__ == "__main__":
         print("  python test_music_generator.py recordings/test.mp3")
         print("  python test_music_generator.py recordings/test.mp3 818012345678")
         print("\nテストモード:")
-        print("  --transcribe-only: 音声認識のみ")
+        print("  --transcribe-only <ファイル>: 音声認識のみ")
         print("  --generate-only: 音楽生成のみ（テスト歌詞使用）")
         sys.exit(0)
     

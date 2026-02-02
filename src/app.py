@@ -596,11 +596,11 @@ def create_app(config: Optional[Config] = None) -> Flask:
     # Music Generator を初期化（有効な場合のみ）
     music_generator = None
     if config.enable_music_generation:
-        if config.openai_api_key and config.mureka_api_key and config.vonage_sms_from:
+        if config.openai_api_key and config.udio_api_key and config.vonage_sms_from:
             from .music_generator import MusicGenerator
             music_generator = MusicGenerator(
                 openai_api_key=config.openai_api_key,
-                mureka_api_key=config.mureka_api_key,
+                udio_api_key=config.udio_api_key,
                 vonage_api_key=config.vonage_api_key,
                 vonage_api_secret=config.vonage_api_secret,
                 vonage_from_number=config.vonage_sms_from
@@ -612,7 +612,7 @@ def create_app(config: Optional[Config] = None) -> Flask:
         else:
             logger.warning(
                 "music_generator_disabled",
-                reason="Missing required API keys (OPENAI_API_KEY, MUREKA_API_KEY, VONAGE_SMS_FROM)"
+                reason="Missing required API keys (OPENAI_API_KEY, UDIO_API_KEY, VONAGE_SMS_FROM)"
             )
     
     # Webhook Handler を初期化

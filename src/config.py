@@ -48,7 +48,7 @@ class Config:
     
     # 音楽生成設定（オプション）
     openai_api_key: Optional[str]
-    mureka_api_key: Optional[str]
+    udio_api_key: Optional[str]
     vonage_sms_from: Optional[str]
     music_style: str
     enable_music_generation: bool
@@ -131,7 +131,7 @@ class Config:
         
         # 音楽生成設定の読み込み
         openai_api_key = os.environ.get("OPENAI_API_KEY") or None
-        mureka_api_key = os.environ.get("MUREKA_API_KEY") or None
+        udio_api_key = os.environ.get("UDIO_API_KEY") or None
         vonage_sms_from = os.environ.get("VONAGE_SMS_FROM") or None
         music_style = os.environ.get("MUSIC_STYLE", "j-pop, emotional, heartfelt, japanese")
         enable_music_generation = os.environ.get("ENABLE_MUSIC_GENERATION", "false").lower() == "true"
@@ -153,7 +153,7 @@ class Config:
             recording_url=recording_url,
             log_level=log_level,
             openai_api_key=openai_api_key,
-            mureka_api_key=mureka_api_key,
+            udio_api_key=udio_api_key,
             vonage_sms_from=vonage_sms_from,
             music_style=music_style,
             enable_music_generation=enable_music_generation,

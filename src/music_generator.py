@@ -1,7 +1,7 @@
 """
 音楽生成モジュール (Music Generator Module)
 
-留守録の音声をテキストに変換し、Mureka APIで音楽を生成します。
+留守録の音声をテキストに変換し、Udio APIで音楽を生成します。
 完成したらVonage SMS APIでURLを送信します。
 """
 
@@ -26,16 +26,16 @@ class MusicGenerator:
     
     処理フロー:
     1. 音声ファイルをOpenAI Whisperでテキストに変換
-    2. テキストを歌詞としてMureka APIで音楽生成
+    2. テキストを歌詞としてUdio APIで音楽生成
     3. 完成したらVonage SMS APIでURLを送信
     """
     
-    MUREKA_API_BASE = "https://api.mureka.ai/v1"
+    UDIO_API_BASE = "https://udioapi.pro/api"
     
     def __init__(
         self,
         openai_api_key: str,
-        mureka_api_key: str,
+        udio_api_key: str,
         vonage_api_key: str,
         vonage_api_secret: str,
         vonage_from_number: str
@@ -45,13 +45,13 @@ class MusicGenerator:
         
         Args:
             openai_api_key: OpenAI APIキー
-            mureka_api_key: Mureka APIキー
+            udio_api_key: Udio APIキー
             vonage_api_key: Vonage APIキー
             vonage_api_secret: Vonage APIシークレット
             vonage_from_number: SMS送信元電話番号
         """
         self.openai_api_key = openai_api_key
-        self.mureka_api_key = mureka_api_key
+        self.udio_api_key = udio_api_key
         self.vonage_api_key = vonage_api_key
         self.vonage_api_secret = vonage_api_secret
         self.vonage_from_number = vonage_from_number
@@ -93,23 +93,25 @@ class MusicGenerator:
     def generate_music(
         self,
         lyrics: str,
-        prompt: str = "rap, hip-hop, japanese, emotional, rhythmic",
-        model: str = "auto",
+        style: str = "rap, hip-hop, japanese, emotional, rhythmic",
+        title: str = "留守録ソング",
+        model: str = "chirp-v3-5",
         max_retries: int = 3,
-        retry_delay: int = 30
+        retry_delay: int = 10
     ) -> str:
         """
-        Mureka APIで音楽を生成
+        Udio APIで音楽を生成
         
         Args:
             lyrics: 歌詞テキスト
-            prompt: 音楽スタイルの指示
-            model: 使用するモデル
+            style: 音楽スタイルの指示
+            title: 曲のタイトル
+            model: 使用するモデル (chirp-v3-5, chirp-v4-0, chirp-v4-5, chirp-v5)
             max_retries: 最大リトライ回数
             retry_delay: リトライ間隔（秒）
         
         Returns:
-            生成タスクID
+            生成タスクID (workId)
         
         Raises:
             MusicGeneratorError: 生成リクエストに失敗した場合
@@ -117,89 +119,102 @@ class MusicGenerator:
         if not lyrics or not lyrics.strip():
             raise MusicGeneratorError("歌詞が空です")
         
-        # 歌詞をVerse形式にフォーマット
+        # 歌詞をフォーマット
         formatted_lyrics = self._format_lyrics(lyrics)
         
         for attempt in range(max_retries):
             try:
                 response = requests.post(
-                    f"{self.MUREKA_API_BASE}/song/generate",
+                    f"{self.UDIO_API_BASE}/v2/generate",
                     headers={
-                        "Authorization": f"Bearer {self.mureka_api_key}",
+                        "Authorization": f"Bearer {self.udio_api_key}",
                         "Content-Type": "application/json"
                     },
                     json={
-                        "lyrics": formatted_lyrics,
+                        "prompt": formatted_lyrics,
+                        "style": style,
+                        "title": title,
                         "model": model,
-                        "prompt": prompt
+                        "make_instrumental": False
                     },
-                    timeout=30
+                    timeout=60
                 )
                 
-                # レート制限の場合はリトライ
-                if response.status_code == 429:
-                    error_detail = response.text
-                    print(f"429エラー詳細: {error_detail}")
-                    if attempt < max_retries - 1:
-                        print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
-                        time.sleep(retry_delay)
-                        continue
-                    else:
-                        raise MusicGeneratorError(f"レート制限: {error_detail}")
-                
-                # その他のエラーの場合も詳細を出力
+                # エラーレスポンスの詳細を出力
                 if response.status_code >= 400:
                     error_detail = response.text
                     print(f"APIエラー ({response.status_code}): {error_detail}")
+                    
+                    if response.status_code == 429:
+                        if attempt < max_retries - 1:
+                            print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
+                            time.sleep(retry_delay)
+                            continue
+                        else:
+                            raise MusicGeneratorError(f"レート制限: {error_detail}")
                 
                 response.raise_for_status()
                 
                 data = response.json()
-                task_id = data.get("id")
                 
-                if not task_id:
-                    raise MusicGeneratorError("タスクIDが取得できませんでした")
+                # レスポンス構造を確認
+                if data.get("code") != 200:
+                    raise MusicGeneratorError(f"APIエラー: {data.get('message', 'Unknown error')}")
                 
-                return task_id
+                # workIdを取得
+                work_id = data.get("data", {}).get("workId")
+                
+                if not work_id:
+                    raise MusicGeneratorError(f"タスクIDが取得できませんでした: {data}")
+                
+                return work_id
                 
             except requests.RequestException as e:
-                if attempt < max_retries - 1 and "429" in str(e):
-                    print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    print(f"リクエストエラー。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
                     time.sleep(retry_delay)
                     continue
                 raise MusicGeneratorError(f"音楽生成リクエストに失敗しました: {e}")
+        
+        raise MusicGeneratorError("最大リトライ回数に達しました")
     
-    def check_music_status(self, task_id: str) -> Dict[str, Any]:
+    def check_music_status(self, work_id: str) -> Dict[str, Any]:
         """
         音楽生成タスクのステータスを確認
         
         Args:
-            task_id: タスクID
+            work_id: タスクID (workId)
         
         Returns:
-            タスク情報（status, audio_url等）
+            タスク情報（type, response_data等）
         
         Raises:
             MusicGeneratorError: ステータス確認に失敗した場合
         """
         try:
             response = requests.get(
-                f"{self.MUREKA_API_BASE}/song/query/{task_id}",
+                f"{self.UDIO_API_BASE}/v2/feed",
+                params={"workId": work_id},
                 headers={
-                    "Authorization": f"Bearer {self.mureka_api_key}"
+                    "Authorization": f"Bearer {self.udio_api_key}"
                 },
                 timeout=30
             )
             response.raise_for_status()
             
-            return response.json()
+            data = response.json()
+            
+            if data.get("code") != 200:
+                raise MusicGeneratorError(f"ステータス確認エラー: {data.get('message', 'Unknown error')}")
+            
+            return data.get("data", {})
             
         except requests.RequestException as e:
             raise MusicGeneratorError(f"ステータス確認に失敗しました: {e}")
     
     def wait_for_music(
         self,
-        task_id: str,
+        work_id: str,
         timeout: int = 300,
         poll_interval: int = 10
     ) -> Optional[str]:
@@ -207,7 +222,7 @@ class MusicGenerator:
         音楽生成完了を待機してURLを取得
         
         Args:
-            task_id: タスクID
+            work_id: タスクID
             timeout: タイムアウト秒数
             poll_interval: ポーリング間隔秒数
         
@@ -218,21 +233,28 @@ class MusicGenerator:
         
         while time.time() - start_time < timeout:
             try:
-                result = self.check_music_status(task_id)
-                status = result.get("status", "")
+                result = self.check_music_status(work_id)
+                status_type = result.get("type", "")
                 
-                if status == "succeeded":
+                print(f"ステータス: {status_type}")
+                
+                if status_type == "SUCCESS":
                     # 生成された曲のURLを取得
-                    choices = result.get("choices", [])
-                    if choices and len(choices) > 0:
-                        return choices[0].get("url")
+                    response_data = result.get("response_data", [])
+                    if response_data and len(response_data) > 0:
+                        # 最初の曲のURLを返す
+                        audio_url = response_data[0].get("audio_url")
+                        if audio_url:
+                            return audio_url
+                    print(f"音楽URLが見つかりません: {result}")
                     return None
                 
-                elif status == "failed":
-                    print(f"音楽生成に失敗しました: {result}")
+                elif status_type == "FAILED":
+                    error_msg = result.get("response_data", [{}])[0].get("error_message", "Unknown error")
+                    print(f"音楽生成に失敗しました: {error_msg}")
                     return None
                 
-                # まだ処理中
+                # まだ処理中 (PENDING, PROCESSING等)
                 time.sleep(poll_interval)
                 
             except MusicGeneratorError as e:
@@ -314,14 +336,14 @@ class MusicGenerator:
         
         # 2. 音楽を生成
         try:
-            task_id = self.generate_music(text, prompt=music_style)
-            print(f"音楽生成タスク開始: {task_id}")
+            work_id = self.generate_music(text, style=music_style)
+            print(f"音楽生成タスク開始: {work_id}")
         except MusicGeneratorError as e:
             print(f"音楽生成エラー: {e}")
             return None
         
         # 3. 完成を待機
-        music_url = self.wait_for_music(task_id)
+        music_url = self.wait_for_music(work_id)
         
         if not music_url:
             print("音楽生成に失敗しました")
