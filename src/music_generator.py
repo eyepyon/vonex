@@ -94,7 +94,9 @@ class MusicGenerator:
         self,
         lyrics: str,
         prompt: str = "rap, hip-hop, japanese, emotional, rhythmic",
-        model: str = "auto"
+        model: str = "auto",
+        max_retries: int = 3,
+        retry_delay: int = 30
     ) -> str:
         """
         Mureka APIで音楽を生成
@@ -103,6 +105,8 @@ class MusicGenerator:
             lyrics: 歌詞テキスト
             prompt: 音楽スタイルの指示
             model: 使用するモデル
+            max_retries: 最大リトライ回数
+            retry_delay: リトライ間隔（秒）
         
         Returns:
             生成タスクID
@@ -116,32 +120,47 @@ class MusicGenerator:
         # 歌詞をVerse形式にフォーマット
         formatted_lyrics = self._format_lyrics(lyrics)
         
-        try:
-            response = requests.post(
-                f"{self.MUREKA_API_BASE}/song/generate",
-                headers={
-                    "Authorization": f"Bearer {self.mureka_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "lyrics": formatted_lyrics,
-                    "model": model,
-                    "prompt": prompt
-                },
-                timeout=30
-            )
-            response.raise_for_status()
-            
-            data = response.json()
-            task_id = data.get("id")
-            
-            if not task_id:
-                raise MusicGeneratorError("タスクIDが取得できませんでした")
-            
-            return task_id
-            
-        except requests.RequestException as e:
-            raise MusicGeneratorError(f"音楽生成リクエストに失敗しました: {e}")
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    f"{self.MUREKA_API_BASE}/song/generate",
+                    headers={
+                        "Authorization": f"Bearer {self.mureka_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "lyrics": formatted_lyrics,
+                        "model": model,
+                        "prompt": prompt
+                    },
+                    timeout=30
+                )
+                
+                # レート制限の場合はリトライ
+                if response.status_code == 429:
+                    if attempt < max_retries - 1:
+                        print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
+                        time.sleep(retry_delay)
+                        continue
+                    else:
+                        raise MusicGeneratorError("レート制限: しばらく待ってから再試行してください")
+                
+                response.raise_for_status()
+                
+                data = response.json()
+                task_id = data.get("id")
+                
+                if not task_id:
+                    raise MusicGeneratorError("タスクIDが取得できませんでした")
+                
+                return task_id
+                
+            except requests.RequestException as e:
+                if attempt < max_retries - 1 and "429" in str(e):
+                    print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
+                    time.sleep(retry_delay)
+                    continue
+                raise MusicGeneratorError(f"音楽生成リクエストに失敗しました: {e}")
     
     def check_music_status(self, task_id: str) -> Dict[str, Any]:
         """
