@@ -138,12 +138,19 @@ class MusicGenerator:
                 
                 # レート制限の場合はリトライ
                 if response.status_code == 429:
+                    error_detail = response.text
+                    print(f"429エラー詳細: {error_detail}")
                     if attempt < max_retries - 1:
                         print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
                         time.sleep(retry_delay)
                         continue
                     else:
-                        raise MusicGeneratorError("レート制限: しばらく待ってから再試行してください")
+                        raise MusicGeneratorError(f"レート制限: {error_detail}")
+                
+                # その他のエラーの場合も詳細を出力
+                if response.status_code >= 400:
+                    error_detail = response.text
+                    print(f"APIエラー ({response.status_code}): {error_detail}")
                 
                 response.raise_for_status()
                 
