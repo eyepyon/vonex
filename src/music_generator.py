@@ -7,12 +7,38 @@
 
 import os
 import time
+import logging
 import requests
 from typing import Optional, Dict, Any
 from pathlib import Path
+from datetime import datetime
+
+import structlog
 
 # OpenAI Whisper用
 import openai
+
+
+# ログ設定
+def setup_logger(name: str = __name__) -> structlog.stdlib.BoundLogger:
+    """構造化ロガーを設定して取得"""
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.stdlib.add_log_level,
+            structlog.stdlib.add_logger_name,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.StackInfoRenderer(),
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.JSONRenderer()
+        ],
+        wrapper_class=structlog.stdlib.BoundLogger,
+        context_class=dict,
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+    return structlog.get_logger(name)
 
 
 class MusicGeneratorError(Exception):
@@ -58,36 +84,70 @@ class MusicGenerator:
         
         # OpenAIクライアントを初期化
         openai.api_key = openai_api_key
+        
+        # ロガーを初期化
+        self.logger = setup_logger(__name__)
+        
+        self.logger.info(
+            "music_generator_initialized",
+            udio_api_base=self.UDIO_API_BASE,
+            vonage_from_number=vonage_from_number
+        )
     
     def transcribe_audio(self, audio_file_path: str) -> str:
         """
         音声ファイルをテキストに変換（OpenAI Whisper）
-        
-        Args:
-            audio_file_path: 音声ファイルのパス
-        
-        Returns:
-            変換されたテキスト
-        
-        Raises:
-            MusicGeneratorError: 変換に失敗した場合
         """
+        self.logger.info(
+            "transcribe_audio_start",
+            audio_file_path=audio_file_path
+        )
+        
         if not os.path.exists(audio_file_path):
+            self.logger.error(
+                "transcribe_audio_file_not_found",
+                audio_file_path=audio_file_path
+            )
             raise MusicGeneratorError(f"音声ファイルが見つかりません: {audio_file_path}")
+        
+        file_size = os.path.getsize(audio_file_path)
+        self.logger.debug(
+            "transcribe_audio_file_info",
+            audio_file_path=audio_file_path,
+            file_size_bytes=file_size
+        )
         
         try:
             client = openai.OpenAI(api_key=self.openai_api_key)
+            
+            self.logger.info(
+                "openai_whisper_request",
+                model="whisper-1",
+                language="ja"
+            )
             
             with open(audio_file_path, "rb") as audio_file:
                 transcript = client.audio.transcriptions.create(
                     model="whisper-1",
                     file=audio_file,
-                    language="ja"  # 日本語
+                    language="ja"
                 )
+            
+            self.logger.info(
+                "openai_whisper_response",
+                text_length=len(transcript.text),
+                text_preview=transcript.text[:100] if len(transcript.text) > 100 else transcript.text
+            )
             
             return transcript.text
             
         except Exception as e:
+            self.logger.error(
+                "transcribe_audio_error",
+                error=str(e),
+                error_type=type(e).__name__,
+                exc_info=True
+            )
             raise MusicGeneratorError(f"音声認識に失敗しました: {e}")
     
     def generate_music(
@@ -101,57 +161,84 @@ class MusicGenerator:
     ) -> str:
         """
         Udio APIで音楽を生成
-        
-        Args:
-            lyrics: 歌詞テキスト
-            style: 音楽スタイルの指示
-            title: 曲のタイトル
-            model: 使用するモデル (chirp-v3-5, chirp-v4-0, chirp-v4-5, chirp-v5)
-            max_retries: 最大リトライ回数
-            retry_delay: リトライ間隔（秒）
-        
-        Returns:
-            生成タスクID (workId)
-        
-        Raises:
-            MusicGeneratorError: 生成リクエストに失敗した場合
         """
+        self.logger.info(
+            "generate_music_start",
+            lyrics_length=len(lyrics),
+            style=style,
+            title=title,
+            model=model
+        )
+        
         if not lyrics or not lyrics.strip():
+            self.logger.error("generate_music_empty_lyrics")
             raise MusicGeneratorError("歌詞が空です")
         
         # 歌詞をフォーマット
         formatted_lyrics = self._format_lyrics(lyrics)
         
+        self.logger.debug(
+            "generate_music_formatted_lyrics",
+            formatted_lyrics=formatted_lyrics
+        )
+        
+        request_body = {
+            "prompt": formatted_lyrics,
+            "style": style,
+            "title": title,
+            "model": model,
+            "make_instrumental": False
+        }
+        
         for attempt in range(max_retries):
             try:
+                url = f"{self.UDIO_API_BASE}/v2/generate"
+                
+                self.logger.info(
+                    "udio_api_request",
+                    url=url,
+                    method="POST",
+                    attempt=attempt + 1,
+                    max_retries=max_retries,
+                    request_body=request_body
+                )
+                
                 response = requests.post(
-                    f"{self.UDIO_API_BASE}/v2/generate",
+                    url,
                     headers={
                         "Authorization": f"Bearer {self.udio_api_key}",
                         "Content-Type": "application/json"
                     },
-                    json={
-                        "prompt": formatted_lyrics,
-                        "style": style,
-                        "title": title,
-                        "model": model,
-                        "make_instrumental": False
-                    },
+                    json=request_body,
                     timeout=60
+                )
+                
+                self.logger.info(
+                    "udio_api_response",
+                    status_code=response.status_code,
+                    response_headers=dict(response.headers),
+                    response_body=response.text[:1000] if len(response.text) > 1000 else response.text
                 )
                 
                 # エラーレスポンスの詳細を出力
                 if response.status_code >= 400:
-                    error_detail = response.text
-                    print(f"APIエラー ({response.status_code}): {error_detail}")
+                    self.logger.error(
+                        "udio_api_error",
+                        status_code=response.status_code,
+                        response_body=response.text
+                    )
                     
                     if response.status_code == 429:
                         if attempt < max_retries - 1:
-                            print(f"レート制限。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
+                            self.logger.warning(
+                                "udio_api_rate_limit",
+                                retry_delay=retry_delay,
+                                attempt=attempt + 1
+                            )
                             time.sleep(retry_delay)
                             continue
                         else:
-                            raise MusicGeneratorError(f"レート制限: {error_detail}")
+                            raise MusicGeneratorError(f"レート制限: {response.text}")
                 
                 response.raise_for_status()
                 
@@ -159,19 +246,38 @@ class MusicGenerator:
                 
                 # レスポンス構造を確認
                 if data.get("code") != 200:
+                    self.logger.error(
+                        "udio_api_error_code",
+                        code=data.get("code"),
+                        message=data.get("message")
+                    )
                     raise MusicGeneratorError(f"APIエラー: {data.get('message', 'Unknown error')}")
                 
                 # workIdを取得（トップレベルまたはdata内）
                 work_id = data.get("workId") or data.get("data", {}).get("task_id")
                 
                 if not work_id:
+                    self.logger.error(
+                        "udio_api_no_work_id",
+                        response_data=data
+                    )
                     raise MusicGeneratorError(f"タスクIDが取得できませんでした: {data}")
+                
+                self.logger.info(
+                    "generate_music_task_created",
+                    work_id=work_id
+                )
                 
                 return work_id
                 
             except requests.RequestException as e:
+                self.logger.error(
+                    "udio_api_request_error",
+                    error=str(e),
+                    error_type=type(e).__name__,
+                    attempt=attempt + 1
+                )
                 if attempt < max_retries - 1:
-                    print(f"リクエストエラー。{retry_delay}秒後にリトライ... ({attempt + 1}/{max_retries})")
                     time.sleep(retry_delay)
                     continue
                 raise MusicGeneratorError(f"音楽生成リクエストに失敗しました: {e}")
@@ -181,35 +287,62 @@ class MusicGenerator:
     def check_music_status(self, work_id: str) -> Dict[str, Any]:
         """
         音楽生成タスクのステータスを確認
-        
-        Args:
-            work_id: タスクID (workId)
-        
-        Returns:
-            タスク情報（type, response_data等）
-        
-        Raises:
-            MusicGeneratorError: ステータス確認に失敗した場合
         """
+        url = f"{self.UDIO_API_BASE}/v2/feed"
+        params = {"workId": work_id}
+        
+        self.logger.debug(
+            "udio_api_status_request",
+            url=url,
+            method="GET",
+            params=params
+        )
+        
         try:
             response = requests.get(
-                f"{self.UDIO_API_BASE}/v2/feed",
-                params={"workId": work_id},
+                url,
+                params=params,
                 headers={
                     "Authorization": f"Bearer {self.udio_api_key}"
                 },
                 timeout=30
             )
+            
+            self.logger.debug(
+                "udio_api_status_response",
+                status_code=response.status_code,
+                response_body=response.text[:500] if len(response.text) > 500 else response.text
+            )
+            
             response.raise_for_status()
             
             data = response.json()
             
             if data.get("code") != 200:
+                self.logger.error(
+                    "udio_api_status_error",
+                    code=data.get("code"),
+                    message=data.get("message")
+                )
                 raise MusicGeneratorError(f"ステータス確認エラー: {data.get('message', 'Unknown error')}")
             
-            return data.get("data", {})
+            result = data.get("data", {})
+            
+            self.logger.info(
+                "udio_api_status_result",
+                work_id=work_id,
+                type=result.get("type"),
+                has_response_data=bool(result.get("response_data"))
+            )
+            
+            return result
             
         except requests.RequestException as e:
+            self.logger.error(
+                "udio_api_status_request_error",
+                error=str(e),
+                work_id=work_id
+            )
             raise MusicGeneratorError(f"ステータス確認に失敗しました: {e}")
     
     def wait_for_music(
@@ -220,64 +353,111 @@ class MusicGenerator:
     ) -> Optional[str]:
         """
         音楽生成完了を待機してURLを取得
-        
-        Args:
-            work_id: タスクID
-            timeout: タイムアウト秒数
-            poll_interval: ポーリング間隔秒数
-        
-        Returns:
-            音楽ファイルのURL、失敗した場合はNone
         """
+        self.logger.info(
+            "wait_for_music_start",
+            work_id=work_id,
+            timeout=timeout,
+            poll_interval=poll_interval
+        )
+        
         start_time = time.time()
+        poll_count = 0
         
         while time.time() - start_time < timeout:
+            poll_count += 1
+            elapsed = int(time.time() - start_time)
+            
             try:
                 result = self.check_music_status(work_id)
                 status_type = result.get("type", "")
                 
-                print(f"ステータス: {status_type}")
+                self.logger.info(
+                    "wait_for_music_poll",
+                    work_id=work_id,
+                    poll_count=poll_count,
+                    elapsed_seconds=elapsed,
+                    status_type=status_type
+                )
                 
                 if status_type == "SUCCESS":
-                    # 生成された曲のURLを取得
                     response_data = result.get("response_data", [])
                     if response_data and len(response_data) > 0:
-                        # 最初の曲のURLを返す
                         audio_url = response_data[0].get("audio_url")
                         if audio_url:
+                            self.logger.info(
+                                "wait_for_music_success",
+                                work_id=work_id,
+                                audio_url=audio_url,
+                                total_time_seconds=elapsed
+                            )
                             return audio_url
-                    print(f"音楽URLが見つかりません: {result}")
+                    
+                    self.logger.error(
+                        "wait_for_music_no_url",
+                        work_id=work_id,
+                        response_data=response_data
+                    )
                     return None
                 
                 elif status_type == "FAILED":
-                    error_msg = result.get("response_data", [{}])[0].get("error_message", "Unknown error")
-                    print(f"音楽生成に失敗しました: {error_msg}")
+                    error_msg = ""
+                    if result.get("response_data"):
+                        error_msg = result["response_data"][0].get("error_message", "Unknown error")
+                    
+                    self.logger.error(
+                        "wait_for_music_failed",
+                        work_id=work_id,
+                        error_message=error_msg,
+                        result=result
+                    )
                     return None
                 
-                # まだ処理中 (PENDING, PROCESSING等)
                 time.sleep(poll_interval)
                 
             except MusicGeneratorError as e:
-                print(f"ステータス確認エラー: {e}")
+                self.logger.warning(
+                    "wait_for_music_poll_error",
+                    work_id=work_id,
+                    error=str(e),
+                    poll_count=poll_count
+                )
                 time.sleep(poll_interval)
         
-        print(f"タイムアウト: {timeout}秒経過しました")
+        self.logger.error(
+            "wait_for_music_timeout",
+            work_id=work_id,
+            timeout=timeout,
+            poll_count=poll_count
+        )
         return None
     
     def send_sms(self, to_number: str, message: str) -> bool:
         """
         Vonage SMS APIでメッセージを送信
-        
-        Args:
-            to_number: 送信先電話番号
-            message: メッセージ本文
-        
-        Returns:
-            送信成功した場合True
         """
+        url = "https://rest.nexmo.com/sms/json"
+        
+        request_data = {
+            "api_key": self.vonage_api_key,
+            "api_secret": "***",  # ログには出さない
+            "from": self.vonage_from_number,
+            "to": to_number,
+            "text": message,
+            "type": "unicode"
+        }
+        
+        self.logger.info(
+            "vonage_sms_request",
+            url=url,
+            to_number=to_number,
+            from_number=self.vonage_from_number,
+            message_length=len(message)
+        )
+        
         try:
             response = requests.post(
-                "https://rest.nexmo.com/sms/json",
+                url,
                 data={
                     "api_key": self.vonage_api_key,
                     "api_secret": self.vonage_api_secret,
@@ -288,19 +468,39 @@ class MusicGenerator:
                 },
                 timeout=30
             )
+            
+            self.logger.info(
+                "vonage_sms_response",
+                status_code=response.status_code,
+                response_body=response.text
+            )
+            
             response.raise_for_status()
             
             data = response.json()
             messages = data.get("messages", [])
             
             if messages and messages[0].get("status") == "0":
+                self.logger.info(
+                    "vonage_sms_success",
+                    to_number=to_number,
+                    message_id=messages[0].get("message-id")
+                )
                 return True
             else:
-                print(f"SMS送信エラー: {data}")
+                self.logger.error(
+                    "vonage_sms_failed",
+                    to_number=to_number,
+                    response_data=data
+                )
                 return False
                 
         except requests.RequestException as e:
-            print(f"SMS送信に失敗しました: {e}")
+            self.logger.error(
+                "vonage_sms_error",
+                error=str(e),
+                to_number=to_number
+            )
             return False
     
     def process_voicemail(
@@ -311,74 +511,81 @@ class MusicGenerator:
     ) -> Optional[str]:
         """
         留守録を処理して音楽を生成し、SMSで通知
-        
-        Args:
-            audio_file_path: 音声ファイルのパス
-            caller_number: 発信者の電話番号（SMS送信先）
-            music_style: 音楽スタイル
-        
-        Returns:
-            生成された音楽のURL、失敗した場合はNone
         """
-        print(f"留守録処理開始: {audio_file_path}")
+        process_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        self.logger.info(
+            "process_voicemail_start",
+            process_id=process_id,
+            audio_file_path=audio_file_path,
+            caller_number=caller_number,
+            music_style=music_style
+        )
         
         # 1. 音声をテキストに変換
         try:
             text = self.transcribe_audio(audio_file_path)
-            print(f"音声認識結果: {text}")
         except MusicGeneratorError as e:
-            print(f"音声認識エラー: {e}")
+            self.logger.error(
+                "process_voicemail_transcribe_error",
+                process_id=process_id,
+                error=str(e)
+            )
             return None
         
         if not text or len(text.strip()) < 5:
-            print("音声が短すぎるか認識できませんでした")
+            self.logger.warning(
+                "process_voicemail_text_too_short",
+                process_id=process_id,
+                text_length=len(text) if text else 0
+            )
             return None
         
         # 2. 音楽を生成
         try:
             work_id = self.generate_music(text, style=music_style)
-            print(f"音楽生成タスク開始: {work_id}")
         except MusicGeneratorError as e:
-            print(f"音楽生成エラー: {e}")
+            self.logger.error(
+                "process_voicemail_generate_error",
+                process_id=process_id,
+                error=str(e)
+            )
             return None
         
         # 3. 完成を待機
         music_url = self.wait_for_music(work_id)
         
         if not music_url:
-            print("音楽生成に失敗しました")
+            self.logger.error(
+                "process_voicemail_no_music_url",
+                process_id=process_id,
+                work_id=work_id
+            )
             return None
-        
-        print(f"音楽生成完了: {music_url}")
         
         # 4. SMSで通知
         message = f"あなたの留守録が音楽になりました！🎵\n{music_url}"
+        sms_sent = self.send_sms(caller_number, message)
         
-        if self.send_sms(caller_number, message):
-            print(f"SMS送信完了: {caller_number}")
-        else:
-            print(f"SMS送信失敗: {caller_number}")
+        self.logger.info(
+            "process_voicemail_complete",
+            process_id=process_id,
+            music_url=music_url,
+            sms_sent=sms_sent
+        )
         
         return music_url
     
     def _format_lyrics(self, text: str) -> str:
         """
         テキストを歌詞形式にフォーマット
-        
-        Args:
-            text: 元のテキスト
-        
-        Returns:
-            フォーマットされた歌詞
         """
-        # 短いテキストはそのままVerseとして使用
         lines = text.strip().split("。")
         lines = [line.strip() for line in lines if line.strip()]
         
         if len(lines) <= 2:
             return f"[Verse]\n{text}"
         
-        # 複数の文がある場合はVerseとChorusに分ける
         mid = len(lines) // 2
         verse_lines = lines[:mid]
         chorus_lines = lines[mid:]

@@ -13,6 +13,7 @@ Requirements:
 """
 
 import logging
+import os
 import sys
 import traceback
 import uuid
@@ -377,12 +378,20 @@ class WebhookHandler:
             file_size=int(file_size) if file_size else 0
         )
         
+        # ローカルファイルパスを取得
+        local_file_path = os.path.join(
+            self.recording_manager.recordings_dir,
+            f"{metadata.id}.mp3"
+        )
+        
         self.logger.info(
             "recording_metadata_saved",
             recording_id=metadata.id,
             call_uuid=call_uuid,
             recording_url=recording_url,
-            duration=duration
+            duration=duration,
+            local_file_path=local_file_path,
+            file_exists=os.path.exists(local_file_path)
         )
         
         # 音楽生成が有効な場合、バックグラウンドで処理を開始
@@ -391,10 +400,17 @@ class WebhookHandler:
             call_log = self.storage.get_call_log(call_uuid)
             caller_number = call_log.caller_number if call_log else ""
             
-            # ローカルファイルパスを取得
-            local_file_path = self.recording_manager.recordings_dir + "/" + metadata.id + ".mp3"
+            self.logger.info(
+                "music_generation_check",
+                recording_id=metadata.id,
+                caller_number=caller_number,
+                local_file_path=local_file_path,
+                file_exists=os.path.exists(local_file_path),
+                has_caller_number=bool(caller_number)
+            )
             
-            if caller_number and local_file_path:
+            # ファイルが存在し、発信者番号がある場合のみ処理
+            if os.path.exists(local_file_path) and caller_number:
                 self.logger.info(
                     "starting_music_generation",
                     recording_id=metadata.id,
@@ -410,6 +426,24 @@ class WebhookHandler:
                 )
                 thread.daemon = True
                 thread.start()
+            else:
+                if not os.path.exists(local_file_path):
+                    self.logger.warning(
+                        "music_generation_skipped_no_file",
+                        recording_id=metadata.id,
+                        local_file_path=local_file_path
+                    )
+                if not caller_number:
+                    self.logger.warning(
+                        "music_generation_skipped_no_caller",
+                        recording_id=metadata.id,
+                        call_uuid=call_uuid
+                    )
+        else:
+            self.logger.debug(
+                "music_generation_disabled",
+                recording_id=metadata.id
+            )
     
     def _process_music_generation(
         self,
