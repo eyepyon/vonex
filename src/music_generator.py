@@ -93,7 +93,7 @@ class MusicGenerator:
     def generate_music(
         self,
         lyrics: str,
-        prompt: str = "j-pop, emotional, heartfelt",
+        prompt: str = "rap, hip-hop, japanese, emotional, rhythmic",
         model: str = "auto"
     ) -> str:
         """
@@ -259,7 +259,7 @@ class MusicGenerator:
         self,
         audio_file_path: str,
         caller_number: str,
-        music_style: str = "j-pop, emotional, heartfelt, japanese"
+        music_style: str = "rap, hip-hop, japanese, emotional, rhythmic"
     ) -> Optional[str]:
         """
         留守録を処理して音楽を生成し、SMSで通知
